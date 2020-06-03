@@ -48,11 +48,11 @@ try {
         $tempFile
     );
     $restoreStageDbCommand = sprintf(
-        HIDE . 'mysql -u %s -p\'%s\' %s < %s',
+        HIDE . 'mysql -u %s -p\'%s\' %s < ~/%s',
         $config['stage']['db']['user'],
         $config['stage']['db']['pass'],
-        $copyDBName,
-        $tempFile
+        $config['stage']['db']['name'],
+        $tempFileName
     );
 
     $dbEncoding = '';
@@ -62,8 +62,13 @@ try {
             $config['meta']['db']['collation']
         );
     }
-    $dbDropSQL = sprintf('DROP DATABASE IF EXISTS %s;', $copyDBName);
+    $dbDropSQL = sprintf('DROP DATABASE IF EXISTS %s;', $config['stage']['db']['name']);
+    $dbDropCopySQL = sprintf('DROP DATABASE IF EXISTS %s;', $copyDBName);
     $dbCreateSQL = sprintf('CREATE DATABASE %s%s;',
+        $config['stage']['db']['name'],
+        $dbEncoding
+    );
+    $dbCreateCopySQL = sprintf('CREATE DATABASE %s%s;',
         $copyDBName,
         $dbEncoding
     );
@@ -104,12 +109,12 @@ try {
     pr('Dump DB', $dbDumpCommand);
 
     // Drop copy DB if exist
-    echo execMysql($sshProd, $config['prod']['db'], $dbDropSQL);
-    pr('Drop copy DB', $dbDropSQL);
+    echo execMysql($sshProd, $config['prod']['db'], $dbDropCopySQL);
+    pr('Drop copy DB', $dbDropCopySQL);
 
     // Create copy DB
-    echo execMysql($sshProd, $config['prod']['db'], $dbCreateSQL);
-    pr('Create copy DB', $dbCreateSQL);
+    echo execMysql($sshProd, $config['prod']['db'], $dbCreateCopySQL);
+    pr('Create copy DB', $dbCreateCopySQL);
 
     // Restore DB
     echo $sshProd->exec($restoreDbCommand);
@@ -133,14 +138,6 @@ try {
     $sshStage = connect($config['stage']['server']);
     pr('Connected to STAGE server');
 
-    // Drop copy DB if exist
-    echo execMysql($sshStage, $config['stage']['db'], $dbDropSQL);
-    pr('Drop copy DB', $dbDropSQL);
-
-    // Create copy DB
-    echo execMysql($sshStage, $config['stage']['db'], $dbCreateSQL);
-    pr('Create DB', $dbCreateSQL);
-
     // Import dump file from PROD to LOCAL
     echo exec($scpProdToLocalCommand);
     pr('Dump file moved from PROD to LOCAL', $scpProdToLocalCommand);
@@ -153,9 +150,17 @@ try {
     echo $sshStage->exec($extractTar);
     pr('Extract dump file', $extractTar);
 
+    // Drop DB
+    echo execMysql($sshStage, $config['stage']['db'], $dbDropSQL);
+    pr('Drop DB', $dbDropSQL);
+
+    // Create DB
+    echo execMysql($sshStage, $config['stage']['db'], $dbCreateSQL);
+    pr('Create DB', $dbCreateSQL);
+
     // Restore DB
-    $sshProd->exec($restoreStageDbCommand);
-    pr('Restore DB executed', $restoreStageDbCommand);
+    echo $sshProd->exec($restoreStageDbCommand);
+    pr('Restore DB', $restoreStageDbCommand);
 
     // Remove old DB
     // TODO code here
