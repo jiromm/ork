@@ -31,9 +31,17 @@ function connect(array $config): SSH2
     return $ssh;
 }
 
-function pr(string $message)
+function pr($message, string $command = '')
 {
-    echo $message . PHP_EOL;
+    if (trim($message)) {
+        echo "\033[36m", trim($message), "\033[0m";
+
+        if ($command) {
+            echo ' ' . $command;
+        }
+
+        echo PHP_EOL;
+    }
 }
 
 function execMysql($ssh, $dbConfig, $query, $dbName = null)

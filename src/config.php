@@ -2,6 +2,7 @@
 
 return [
     'meta' => [
+        'key' => '~/.ssh/id_rsa',
         'temp_dir' => '/var/tmp',
         'db' => [
             'character' => 'utf8mb4',
@@ -11,24 +12,30 @@ return [
         ],
     ],
     'prod' => [
-        'host' => '',
-        'key' => '',
+        'server' => [
+            'host' => '',
+            'user' => '',
+            'pass' => '',
+        ],
         'db' => [
             'host' => 'localhost',
             'port' => '3306',
             'name' => '',
-            'login' => '',
+            'user' => '',
             'pass' => '',
         ],
     ],
     'stage' => [
-        'host' => '',
-        'key' => '',
+        'server' => [
+            'host' => '',
+            'user' => '',
+            'pass' => '',
+        ],
         'db' => [
             'host' => 'localhost',
             'port' => '3306',
             'name' => '',
-            'login' => '',
+            'user' => '',
             'pass' => '',
         ],
     ],
