@@ -15,11 +15,11 @@ try {
         $config['prod']['db']['name'],
         date('Y-m-d')
     );
-    $tempFile = sprintf('%s/%s_%s.sql',
+    $tempFile = sprintf('%s/%s',
         $config['meta']['temp_dir'],
-        $config['prod']['db']['name'],
-        date('Y-m-d')
+        $tempFileName
     );
+    $tempFileLocal = sprintf('~/%s', $tempFileName);
     $tarGzProdFile = sprintf('~/%s_%s.sql.tar.gz',
         $config['prod']['db']['name'],
         date('Y-m-d')
@@ -32,6 +32,8 @@ try {
         $config['prod']['db']['name'],
         date('Y-m-d')
     );
+    $removeTarFileLocal = sprintf('rm %s', $tarGzLocalFile);
+    $removeSQLFileLocal = sprintf('rm %s', $tempFileLocal);
 
     $dbDumpCommand = sprintf(
         HIDE . 'mysqldump -u %s -p\'%s\' %s > %s',
@@ -48,12 +50,13 @@ try {
         $tempFile
     );
     $restoreStageDbCommand = sprintf(
-        HIDE . 'mysql -u %s -p\'%s\' %s < ~/%s',
+        HIDE . 'mysql -u %s -p\'%s\' %s < %s',
         $config['stage']['db']['user'],
         $config['stage']['db']['pass'],
         $config['stage']['db']['name'],
-        $tempFileName
+        $tempFileLocal
     );
+    $removeSQLFileProd = sprintf('rm %s', $tempFile);
 
     $dbEncoding = '';
     if (!empty($config['meta']['db']['character']) && !empty($config['meta']['db']['collation'])) {
@@ -99,6 +102,7 @@ try {
         $tarGzStageFile
     );
     $extractTar = sprintf('tar -xzvf %s', $tarGzStageFile);
+    $removeDumpFileProd = sprintf('rm %s', $tarGzProdFile);
 
     // Connect to PROD server
     $sshProd = connect($config['prod']['server']);
@@ -162,20 +166,21 @@ try {
     echo $sshProd->exec($restoreStageDbCommand);
     pr('Restore DB', $restoreStageDbCommand);
 
-    // Remove old DB
-    // TODO code here
+    // Remove LOCAL dump file
+    echo exec($removeTarFileLocal);
+    pr('LOCAL dump file removed', $removeTarFileLocal);
 
-    // Rename current DB to old
-    // TODO code here
+    // Remove LOCAL SQL file
+    echo exec($removeSQLFileLocal);
+    pr('LOCAL SQL file removed', $removeSQLFileLocal);
 
-    // Rename copy DB to current
-    // TODO code here
+    // Remove PROD dump file
+    echo exec($removeSQLFileProd);
+    pr('PROD SQL file removed', $removeSQLFileProd);
 
-    // Remove DB dump files from PROD server
-    // TODO code here
-
-    // Remove DB dump file from STAGE server
-    // TODO code here
+    // Remove PROD dump file
+    echo exec($removeDumpFileProd);
+    pr('PROD SQL file removed', $removeDumpFileProd);
 } catch (\Throwable $e) {
     echo 'ERROR! ' . $e->getMessage() . PHP_EOL;
 }
